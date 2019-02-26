@@ -1,13 +1,13 @@
 # Dependencies
 import numpy as np
-from sklearn.cluster import KMeans
+from sklearn.neural_network import MLPClassifier
 
 # Dataset import
 from sklearn import datasets
 
 # Dataset preprocessors
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import StandardScaler
 
 # Data visualisation - Dependencies
 import matplotlib.pyplot as plt
@@ -42,23 +42,33 @@ iris = datasets.load_iris()
 X = iris.data
 y = iris.target
 
+# Dataset splitting
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33)
+
 # Dataset scaling
-scaler = MinMaxScaler()
-X_scaled = scaler.fit_transform(X)
+scaler = StandardScaler()
+X_scaledTrain = scaler.fit_transform(X_train)
+X_scaledTest = scaler.transform(X_test)
+X_scaledAll = scaler.transform(X)
 
 # Training
-kmeans = KMeans(n_clusters=3).fit(X_scaled)
+clf = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5, 3)).fit(X_scaledTrain, y_train)
 
-# Prediction
+# Testing
 predict_y = []
-for i in range(len(X)):
-    predict_me = np.array(X_scaled[i].astype(float))
+correct = 0
+for i in range(len(X_test)):
+    predict_me = np.array(X_scaledTest[i].astype(float))
     predict_me = predict_me.reshape(-1, len(predict_me))
-    prediction = kmeans.predict(predict_me)
+    prediction = clf.predict(predict_me)
     predict_y.append(prediction[0])
+    if prediction[0] == y_test[i]:
+        correct += 1
+
+print ("Success rate : ", correct/len(X_test))
 
 # Visualization
-visualise(X,y, "Real", 1)
-visualise(X,predict_y, "Predict", 2)
+visualise(np.concatenate((X_scaledTrain,X_scaledTest), axis = 0),np.concatenate((y_train, predict_y), axis=0), "Train + Test", 1)
+visualise(X_scaledAll,y, "True", 2)
 
 plt.show()
